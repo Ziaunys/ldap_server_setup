@@ -23,6 +23,11 @@ plan ldap_server_setup::populate_ldap_entries(
       source => 'puppet:///modules/ldap_server_setup/groups.ldif',
     }
 
+    file { '/etc/ldapserver/test-groups.ldif':
+      ensure => file,
+      source => 'puppet:///modules/ldap_server_setup/test-groups.ldif',
+    }
+
     file { '/var/lib/docker/volumes/ldap_data/_data/indexmod.ldif':
       ensure => file,
       source => 'puppet:///modules/ldap_server_setup/indexmod.ldif',
@@ -47,6 +52,13 @@ plan ldap_server_setup::populate_ldap_entries(
       path    => '/usr/bin',
       onlyif  => 'ldapsearch -h $(hostname -f) -b dc=puppetdebug,dc=vlan -D "cn=admin,dc=puppetdebug,dc=vlan" -w admin "(&(objectclass=posixGroup)(cn=admins))" | grep -i "numResponses: 1"',
       require => [Package['openldap-clients'], File['/etc/ldapserver/groups.ldif']],
+    }
+
+    exec { 'import over 9000 test groups':
+      command => 'ldapadd -x -H ldap://localhost -D "cn=admin,dc=puppetdebug,dc=vlan" -w admin -f /etc/ldapserver/test-groups.ldif',
+      path    => '/usr/bin',
+   #  onlyif  => 'ldapsearch -h $(hostname -f) -b dc=puppetdebug,dc=vlan -D "cn=admin,dc=puppetdebug,dc=vlan" -w admin "(&(objectclass=posixGroup)(cn=test-group*))" | grep -i "numResponses: 10000"',
+      require => [Package['openldap-clients'], File['/etc/ldapserver/test-groups.ldif']],
     }
 
     exec { 'import indexmod':
